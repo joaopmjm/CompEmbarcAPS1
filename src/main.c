@@ -19,31 +19,51 @@
 
 #include "asf.h"
 
+// Musicas adquiridas do github do Bruno Arthur Cesconeto (Toranja) https://github.com/brunoartc/Embarcados/
+#include "musicas.h"
+
+
 /************************************************************************/
 /* defines                                                              */
 /************************************************************************/
-#define LED_PIO				PIOC         
-#define LED_PIO_ID			12
-#define LED_PIO_IDX			8
-#define LED_PIO_IDX_MASK	(1 << LED_PIO_IDX)
+	// Configurando LEDs
+#define LED1_PIO			PIOA        
+#define LED1_PIO_ID			10
+#define LED1_PIO_IDX		0
+#define LED1_PIO_IDX_MASK	(1 << LED1_PIO_IDX)
 
-// Configuracoes do botao
-#define BUT_PIO				PIOA
-#define BUT_PIO_ID			10
-#define BUT_PIO_IDX			11
-#define BUT_PIO_IDX_MASK	(1u << BUT_PIO_IDX)
+#define LED2_PIO			PIOC
+#define LED2_PIO_ID			12
+#define LED2_PIO_IDX		30
+#define LED2_PIO_IDX_MASK	(1 << LED2_PIO_IDX)
 
-/*  Default pin configuration (no attribute). */
-#define _PIO_DEFAULT             (0u << 0)
-/*  The internal pin pull-up is active. */
-#define _PIO_PULLUP              (1u << 0)
-/*  The internal glitch filter is active. */
-#define _PIO_DEGLITCH            (1u << 1)
-/*  The pin is open-drain. */
-#define _PIO_OPENDRAIN           (1u << 2)
-/*  The internal debouncing filter is active. */
-#define _PIO_DEBOUNCE            (1u << 3)
+#define LED3_PIO			PIOB
+#define LED3_PIO_ID			11
+#define LED3_PIO_IDX		2
+#define LED3_PIO_IDX_MASK	(1 << LED3_PIO_IDX)
 
+
+	// Configuracoes do botoes
+#define BUT1_PIO			PIOD
+#define BUT1_PIO_ID			16
+#define BUT1_PIO_IDX		28
+#define BUT1_PIO_IDX_MASK	(1u << BUT1_PIO_IDX)
+
+#define BUT3_PIO			PIOA
+#define BUT3_PIO_ID			10
+#define BUT3_PIO_IDX		19
+#define BUT3_PIO_IDX_MASK	(1u << BUT3_PIO_IDX)
+
+#define BUT2_PIO			PIOC
+#define BUT2_PIO_ID			12
+#define BUT2_PIO_IDX		31
+#define BUT2_PIO_IDX_MASK	(1u << BUT2_PIO_IDX)
+
+	// Configuracoes Buzzer
+#define BUZZ_PIO			PIOA
+#define BUZZ_PIO_ID			10
+#define BUZZ_PIO_IDX		4
+#define BUZZ_PIO_IDX_MASK	(1u << BUZZ_PIO_IDX)
 
 /************************************************************************/
 /* constants                                                            */
@@ -52,73 +72,31 @@
 /************************************************************************/
 /* variaveis globais                                                    */
 /************************************************************************/
-
 /************************************************************************/
 /* prototypes                                                           */
 /************************************************************************/
 
 void init(void);
-
+void faz_buzz(float freq, float tempo);
 /************************************************************************/
 /* interrupcoes                                                         */
 /************************************************************************/
 
 /************************************************************************/
 /* funcoes                                                              */
-
-void _pio_set(Pio *p_pio, const uint32_t ul_mask){
-	p_pio->PIO_SODR = ul_mask;
-}
-
-void _pio_clear(Pio *p_pio, const uint32_t ul_mask){
-	p_pio->PIO_CODR = ul_mask;
-}
-
-void _pio_pull_up(Pio *p_pio, const uint32_t ul_mask, const uint32_t ul_pull_up_enable){
-	if(ul_pull_up_enable == 1){
-		p_pio->PIO_PUER = ul_mask;
-	}else {
-		p_pio->PIO_PUDR = ul_mask;
-	}
-}
-
-void _pio_set_input(Pio *p_pio, const uint32_t ul_mask,
-        const uint32_t ul_attribute)
-{
-	p_pio->PIO_ODR = ul_mask;
-	_pio_pull_up(BUT_PIO,BUT_PIO_IDX_MASK,ul_attribute & _PIO_PULLUP);
-
-	if (ul_attribute & (_PIO_DEGLITCH | _PIO_DEBOUNCE))
-		p_pio->PIO_IFSCER = ul_mask;
-	else
-		p_pio->PIO_IFSCDR = ul_mask;
-	
-}
-
-void _pio_set_output(Pio *p_pio, const uint32_t ul_mask,
-		const uint32_t ul_default_level,
-		const uint32_t ul_multidrive_enable,
-		const uint32_t ul_pull_up_enable)
-{
-	p_pio->PIO_ODR = ul_mask;
-	_pio_pull_up(p_pio, ul_mask,ul_pull_up_enable);
-
-	if(ul_multidrive_enable)
-		p_pio->PIO_MDER = ul_mask;
-	else
-		p_pio->PIO_MDDR = ul_mask;
-
-	if(ul_default_level)
-		_pio_set(p_pio,ul_mask);
-	else
-		_pio_clear(p_pio,ul_mask);
-		
-	p_pio->PIO_OER = ul_mask;
-	p_pio->PIO_PER = ul_mask;
-}
-
-
 /************************************************************************/
+
+void faz_buzz(float freq, float tempo){
+	float dc = 1000/(freq*2); //tempo que cada ligada deve tomar
+	//float qtd = (tempo*1000)/(2*dc);
+	// ---___
+	//for(int n=0;n < tempo*1000/(dc*2);n++){
+		pio_set(BUZZ_PIO,BUZZ_PIO_IDX_MASK);
+		delay_ms(dc);
+		pio_clear(BUZZ_PIO,BUZZ_PIO_IDX_MASK);
+		delay_ms(dc);
+	//}
+}
 
 // Função de inicialização do uC
 void init(void)
@@ -128,17 +106,32 @@ void init(void)
 	WDT->WDT_MR=WDT_MR_WDDIS;
 	// Ativa o PIO na qual o LED foi conectado
 	// para que possamos controlar o LED.
-	pmc_enable_periph_clk(LED_PIO_ID);
+	pmc_enable_periph_clk(LED1_PIO_ID);
+	pmc_enable_periph_clk(LED2_PIO_ID);
+	pmc_enable_periph_clk(LED3_PIO_ID);
+	
 	//Inicializa PC8 como saída
-	_pio_set_output(LED_PIO, LED_PIO_IDX_MASK, 0, 0, 0);
+	pio_set_output(LED1_PIO, LED1_PIO_IDX_MASK, 1, 0, 0);
+	pio_set_output(LED2_PIO, LED2_PIO_IDX_MASK, 1, 0, 0);
+	pio_set_output(LED3_PIO, LED3_PIO_IDX_MASK, 1, 0, 0);
 	
 	// Inicializa PIO do botao
-	pmc_enable_periph_clk(BUT_PIO_ID);
+	pmc_enable_periph_clk(BUT1_PIO_ID);
+	pmc_enable_periph_clk(BUT2_PIO_ID);
+	pmc_enable_periph_clk(BUT3_PIO_ID);
 	
 	// configura pino ligado ao botão como entrada com um pull-up.
-	_pio_set_input(BUT_PIO, BUT_PIO_IDX_MASK, _PIO_PULLUP);
-
+	pio_set_input(BUT1_PIO, BUT1_PIO_IDX_MASK,PIO_DEBOUNCE);
+	pio_set_input(BUT2_PIO, BUT2_PIO_IDX_MASK,PIO_DEBOUNCE);
+	pio_set_input(BUT3_PIO, BUT3_PIO_IDX_MASK,PIO_DEBOUNCE);
 	
+	pio_pull_up(BUT1_PIO,BUT1_PIO_IDX_MASK,1);
+	pio_pull_up(BUT2_PIO,BUT2_PIO_IDX_MASK,1);
+	pio_pull_up(BUT3_PIO,BUT3_PIO_IDX_MASK,1);
+	
+	// Inicializa PIO do Buzzer
+	pmc_enable_periph_clk(BUZZ_PIO);
+	pio_set_output(BUZZ_PIO,BUZZ_PIO_IDX_MASK,0,0,0);
 }
 
 /************************************************************************/
@@ -150,21 +143,20 @@ int main(void)
 {
   init();
   
-  char status =0;
+  //char music_chosen =0;
+  char play=0;
 
   // super loop
   // aplicacoes embarcadas não devem sair do while(1).
   while (1)
   {
-	  if(pio_get(BUT_PIO,PIO_DEFAULT,BUT_PIO_IDX_MASK) != status){
-		  for(int i=0;i<5;i++){
-			_pio_set(PIOC, LED_PIO_IDX_MASK);      // Coloca 1 no pino LED
-			delay_ms(200);                        // Delay por software de 200 ms
-			_pio_clear(PIOC, LED_PIO_IDX_MASK);    // Coloca 0 no pino do LED
-			delay_ms(200);
-		  }
+	  if (!pio_get(BUT2_PIO,PIO_DEFAULT,BUT2_PIO_IDX_MASK)){
+		  play = !play;
+		  delay_s(1);
 	  }
-	status = pio_get(BUT_PIO,PIO_DEFAULT,BUT_PIO_IDX_MASK);
+	  if(play != 0){ 
+			faz_buzz(250,5);
+		}
   }
   return 0;
 }
