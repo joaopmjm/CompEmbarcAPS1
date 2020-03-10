@@ -68,7 +68,7 @@
 /********/
 /* constants                                                            */
 /********/
-#define MAX_SIZE 300
+#define MAX_SIZE 205
 
 /********/
 /* variaveis globais                                                    */
@@ -165,16 +165,17 @@ int main(void){
 		imperial_music.tempo[i] = imperial_march_tempo[i];
 	}
 
-	//music_info mario_music;
-	//mario_music.n = sizeof(mario_theme_notes)/sizeof(mario_theme_notes[0]);
-	//for(int i = 0; i < mario_music.n; i++){
-		//mario_music.notes[i] = mario_theme_notes[i];
-		//mario_music.tempo[i] = mario_theme_tempo[i];
-	//}
+	music_info underworld_music;
+	underworld_music.n = sizeof(underworld_melody)/sizeof(underworld_melody[0]);
+	for(int i = 0; i < underworld_music.n; i++){
+		underworld_music.notes[i] = underworld_melody[i];
+		underworld_music.tempo[i] = underworld_tempo[i];
+	}
+
+	music_info music_list[] = {imperial_music, pirate_music, underworld_music};
 	
 	Pio *pio_list[] = {LED1_PIO,LED2_PIO};
 	int mask_list[] = {LED1_PIO_IDX_MASK, LED2_PIO_IDX_MASK};
-	music_info music_list[] = {imperial_music, pirate_music};
 
 	// super loop
 	// aplicacoes embarcadas não devem sair do while(1).
@@ -187,7 +188,7 @@ int main(void){
 		}
 		if (!pio_get(BUT3_PIO,PIO_DEFAULT,BUT3_PIO_IDX_MASK)){
 			music++;
-			if(music == 2) music = 0;
+			if(music == sizeof(music_list)/sizeof(music_list[0])) music = 0;
 			k = 0;
 			delay_s(1);
 		}
@@ -216,7 +217,7 @@ int main(void){
 				k = 0;
 				music++;
 				delay_s(1);
-				if(music == 2) music = 0;
+				if(music == sizeof(music_list)/sizeof(music_list[0])) music = 0;
 			}
 		}
 	}
