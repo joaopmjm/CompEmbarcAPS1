@@ -13,9 +13,9 @@
 *  - Kit: ATMEL SAME70-XPLD - ARM CORTEX M7
 */
 
-/********/
+/****/
 /* includes                                                             */
-/********/
+/****/
 
 #include "asf.h"
 
@@ -23,11 +23,11 @@
 #include "musicas.h"
 
 
-/********/
+/****/
 /* defines                                                              */
-/********/
+/****/
 // Configurando LEDs
-#define LED1_PIO			PIOA        
+#define LED1_PIO			PIOA
 #define LED1_PIO_ID			ID_PIOA
 #define LED1_PIO_IDX		0
 #define LED1_PIO_IDX_MASK	(1 << LED1_PIO_IDX)
@@ -65,46 +65,47 @@
 #define BUZZ_PIO_IDX		30
 #define BUZZ_PIO_IDX_MASK	(1u << BUZZ_PIO_IDX)
 
-/********/
+/****/
 /* constants                                                            */
-/********/
+/****/
 #define MAX_SIZE 205
 
-/********/
+/****/
 /* variaveis globais                                                    */
-/********/
-/********/
+/****/
+
+/****/
 /* prototypes                                                           */
-/********/
+/****/
 
 void init(void);
 void faz_buzz(float freq);
-/********/
+/****/
 /* interrupcoes                                                         */
-/********/
+/****/
 /* Structs                                                         */
-/********/
+/****/
 typedef struct{
-	int notes[MAX_SIZE];
-	int tempo[MAX_SIZE];
 	int n;
+	int *notes;
+	int *tempo;
 } music_info;
 
-/********/
+/****/
 /* funcoes                                                              */
-/********/
+/****/
 
 
 
 void faz_buzz(float freq){
-	float dc = (1.0/(freq*2.0))*1000000.0; //tempo que cada ligada deve tomar
+	float dc = (1000000.0/(freq*2.0)); //tempo que cada ligada deve tomar
 	pio_set(BUZZ_PIO,BUZZ_PIO_IDX_MASK);
 	delay_us(dc);
 	pio_clear(BUZZ_PIO,BUZZ_PIO_IDX_MASK);
 	delay_us(dc);
 }
 
-	// Função de inicialização do uC
+// Função de inicialização do uC
 void init(void){
 	sysclk_init();
 	
@@ -139,11 +140,11 @@ void init(void){
 	pio_set_output(BUZZ_PIO,BUZZ_PIO_IDX_MASK,0,0,0);
 }
 
-	/********/
-	/* Main                                                                 */
-	/********/
+/****/
+/* Main                                                                 */
+/****/
 
-	// Funcao principal chamada na inicalizacao do uC.
+// Funcao principal chamada na inicalizacao do uC.
 int main(void){
 	init();
 
@@ -153,40 +154,36 @@ int main(void){
 
 	music_info pirate_music;
 	pirate_music.n = sizeof(pirate_notes)/sizeof(pirate_notes[0]);
-	for(int i = 0; i < pirate_music.n; i++){
-		pirate_music.notes[i] = pirate_notes[i];
-		pirate_music.tempo[i] = pirate_tempo[i];
-	}
+	pirate_music.notes = &pirate_notes;
+	pirate_music.tempo = &pirate_tempo;
 	
 	music_info imperial_music;
 	imperial_music.n = sizeof(imperial_march_notes)/sizeof(imperial_march_notes[0]);
-	for(int i = 0; i < imperial_music.n; i++){
-		imperial_music.notes[i] = imperial_march_notes[i];
-		imperial_music.tempo[i] = imperial_march_tempo[i];
-	}
+	imperial_music.notes = &imperial_march_notes;
+	imperial_music.tempo = &imperial_march_tempo;
 
 	music_info underworld_music;
 	underworld_music.n = sizeof(underworld_melody)/sizeof(underworld_melody[0]);
-	for(int i = 0; i < underworld_music.n; i++){
-		underworld_music.notes[i] = underworld_melody[i];
-		underworld_music.tempo[i] = underworld_tempo[i];
-	}
+	underworld_music.notes = &underworld_melody;
+	underworld_music.tempo = &underworld_tempo;
 
 	music_info music_list[] = {imperial_music, pirate_music, underworld_music};
 	
-	Pio *pio_list[] = {LED1_PIO,LED2_PIO};
-	int mask_list[] = {LED1_PIO_IDX_MASK, LED2_PIO_IDX_MASK};
+	Pio *pio_list[] = {LED1_PIO,LED2_PIO,LED3_PIO};
+	int mask_list[] = {LED1_PIO_IDX_MASK, LED2_PIO_IDX_MASK,LED3_PIO_IDX_MASK};
 
 	// super loop
 	// aplicacoes embarcadas não devem sair do while(1).
 	while (1){
 		if (!pio_get(BUT1_PIO,PIO_DEFAULT,BUT1_PIO_IDX_MASK)){
+			pio_clear(pio_list[music], mask_list[music]);
 			music--;
 			if(music < 0) music = 1;
 			k = 0;
 			delay_s(1);
 		}
 		if (!pio_get(BUT3_PIO,PIO_DEFAULT,BUT3_PIO_IDX_MASK)){
+			pio_clear(pio_list[music], mask_list[music]);
 			music++;
 			if(music == sizeof(music_list)/sizeof(music_list[0])) music = 0;
 			k = 0;
@@ -196,27 +193,30 @@ int main(void){
 			play = !play;
 			delay_s(1);
 		}
-		if(play != 0){		 
+		if(play != 0){
 			int tempo = music_list[music].tempo[k];
 			if(tempo != 0){
 				if (music_list[music].notes[k] < music_list[music].notes[k-1]){
 					pio_set(pio_list[music], mask_list[music]);
-				}else if(music_list[music].notes[k] > music_list[music].notes[k-1]){
+					}else if(music_list[music].notes[k] > music_list[music].notes[k-1]){
 					pio_clear(pio_list[music], mask_list[music]);
 				}
 				for (int n=0;n<tempo;n++){
 					if (music_list[music].notes[k] != 0){
 						faz_buzz((float)music_list[music].notes[k]);
 					}
+					//delay_ms(1);
 				}
+				delay_ms(10);
 			}
 			//char k<music_list[music].n
 			if (k<music_list[music].n){
 				k++;
-			}else{
+				}else{
 				k = 0;
+				pio_clear(pio_list[music], mask_list[music]);
 				music++;
-				delay_s(1);
+				delay_s(2);
 				if(music == sizeof(music_list)/sizeof(music_list[0])) music = 0;
 			}
 		}
