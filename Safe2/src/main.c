@@ -120,7 +120,7 @@ typedef struct{
 	int n;
 	int *notes;
 	int *tempo;
-	char nome[10];
+	char *nome;
 } music_info;
 
 /****/
@@ -213,56 +213,25 @@ int main (void)
 	
 	
 	char play = 0;
-	int led_on = 0;
+	char led_on = 0;
 	int music = 0;
 	int k = 0;
 
 	music_info pirate_music;
 	pirate_music.n = sizeof(pirate_notes)/sizeof(pirate_notes[0]);
-	pirate_music.nome[0]  = 'P';
-	pirate_music.nome[1]  = 'i';
-	pirate_music.nome[2]  = 'r';
-	pirate_music.nome[3]  = 'a';
-	pirate_music.nome[4]  = 't';
-	pirate_music.nome[5]  = 'a';
-	pirate_music.nome[6]  = 's';
-	pirate_music.nome[7]  = ' ';
-	pirate_music.nome[8]  = 'C';
-	pirate_music.nome[9]  = '.';
-	pirate_music.nome[10] = '\0';
-	
+	pirate_music.nome = &"Piratas C.";
 	pirate_music.notes = &pirate_notes;
 	pirate_music.tempo = &pirate_tempo;
 	
 	music_info imperial_music;
 	imperial_music.n = sizeof(imperial_march_notes)/sizeof(imperial_march_notes[0]);
-	imperial_music.nome[0]  = 'D';
-	imperial_music.nome[1]  = 'a';
-	imperial_music.nome[2]  = 'r';
-	imperial_music.nome[3]  = 't';
-	imperial_music.nome[4]  = 'h';
-	imperial_music.nome[5]  = ' ';
-	imperial_music.nome[6]  = 'V';
-	imperial_music.nome[7]  = 'a';
-	imperial_music.nome[8]  = 'd';
-	imperial_music.nome[9]  = 'e';
-	imperial_music.nome[10]  = 'r';
-	imperial_music.nome[11] = '\0';
+	imperial_music.nome = &"Darth Vader";
 	imperial_music.notes = &imperial_march_notes;
 	imperial_music.tempo = &imperial_march_tempo;
 
 	music_info underworld_music;
 	underworld_music.n = sizeof(underworld_melody)/sizeof(underworld_melody[0]);
-	underworld_music.nome[0] = 'U';
-	underworld_music.nome[1] = 'd';
-	underworld_music.nome[2] = 'e';
-	underworld_music.nome[3] = 'r';
-	underworld_music.nome[4] = 'w';
-	underworld_music.nome[5] = 'o';
-	underworld_music.nome[6] = 'r';
-	underworld_music.nome[7] = 'l';
-	underworld_music.nome[8] = 'd';
-	underworld_music.nome[9] = '\0';
+	underworld_music.nome = &"Underworld";
 	underworld_music.notes = &underworld_melody;
 	underworld_music.tempo = &underworld_tempo;
 
@@ -282,29 +251,29 @@ int main (void)
 			pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);
 		}
 		if (but1_flag){
-			music--;
-			if(music < 0) music = 1;
 			k = 0;
+			music--;
+			if(music < 0) music = sizeof(music_list)/sizeof(music_list[0])-1;
 			gfx_mono_draw_string("           ", 10, 10, &sysfont);
 			gfx_mono_draw_string(music_list[music].nome, 10, 10, &sysfont);
 			but1_flag = 0;
-			//delay_s(1);
+			delay_ms(500);
 		}
 		if (but3_flag){
+			k = 0;
 			music++;
 			if(music == sizeof(music_list)/sizeof(music_list[0])) music = 0;
 			gfx_mono_draw_string("           ", 10, 10, &sysfont);
 			gfx_mono_draw_string(music_list[music].nome, 10, 10, &sysfont);
-			k = 0;
 			but3_flag = 0;
-			delay_s(1);
+			delay_ms(500);
 		}
 		if (but2_flag){
 			play = !play;
 			if (play){ 
 				pio_set(LED4_PIO,LED4_PIO_IDX_MASK);
 			}
-			delay_s(1);
+			delay_ms(500);
 			but2_flag = 0;
 		}
 		if(play != 0){
