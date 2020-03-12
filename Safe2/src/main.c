@@ -56,6 +56,11 @@
 #define LED3_PIO_IDX		2
 #define LED3_PIO_IDX_MASK	(1 << LED3_PIO_IDX)
 
+#define LED4_PIO			PIOC
+#define LED4_PIO_ID			ID_PIOC
+#define LED4_PIO_IDX		8
+#define LED4_PIO_IDX_MASK	(1 << LED4_PIO_IDX)
+
 
 // Configuracoes do botoes
 #define BUT1_PIO			PIOD
@@ -83,6 +88,11 @@ volatile char but1_flag;
 volatile char but2_flag;
 volatile char but3_flag;
 
+void but1_callback(void);
+void but2_callback(void);
+void but3_callback(void);
+void clear_leds(void);
+
 
 /****/
 /* Callback                                                         */
@@ -96,7 +106,12 @@ void but2_callback(void){
 void but3_callback(void){
 	but3_flag = 1;
 }
+/****/
+/* Constants                                                         */
+/****/
 
+Pio *pio_list[] = {LED1_PIO,LED2_PIO,LED3_PIO};
+int mask_list[] = {LED1_PIO_IDX_MASK, LED2_PIO_IDX_MASK,LED3_PIO_IDX_MASK};
 
 /****/
 /* Structs                                                         */
@@ -120,7 +135,9 @@ void faz_buzz(float freq){
 }
 
 void clear_leds(void){
-
+	pio_set(pio_list[0], mask_list[0]);
+	pio_set(pio_list[1], mask_list[1]);
+	pio_set(pio_list[2], mask_list[2]);
 }
 
 
@@ -133,10 +150,12 @@ void init(void){
 	pmc_enable_periph_clk(LED1_PIO_ID);
 	pmc_enable_periph_clk(LED2_PIO_ID);
 	pmc_enable_periph_clk(LED3_PIO_ID);
+	pmc_enable_periph_clk(LED4_PIO_ID);
 	
 	pio_configure(LED1_PIO, PIO_OUTPUT_0, LED1_PIO_IDX_MASK, PIO_DEFAULT);
 	pio_configure(LED2_PIO, PIO_OUTPUT_0, LED2_PIO_IDX_MASK, PIO_DEFAULT);
 	pio_configure(LED3_PIO, PIO_OUTPUT_0, LED3_PIO_IDX_MASK, PIO_DEFAULT);
+	pio_configure(LED4_PIO, PIO_OUTPUT_0, LED4_PIO_IDX_MASK, PIO_DEFAULT);
 	
 	// Inicializa PIO do botao
 	pmc_enable_periph_clk(BUT1_PIO_ID);
@@ -249,13 +268,7 @@ int main (void)
 
 	music_info music_list[] = {pirate_music, imperial_music, underworld_music};
 	
-	Pio *pio_list[] = {LED1_PIO,LED2_PIO,LED3_PIO};
-	int mask_list[] = {LED1_PIO_IDX_MASK, LED2_PIO_IDX_MASK,LED3_PIO_IDX_MASK};
-	
-	pio_set(pio_list[0], mask_list[0]);
-	pio_set(pio_list[1], mask_list[1]);
-	pio_set(pio_list[2], mask_list[2]);
-
+	clear_leds();
 
 	gfx_mono_ssd1306_init();
 	gfx_mono_draw_string(music_list[music].nome, 10, 10, &sysfont);
@@ -264,6 +277,8 @@ int main (void)
 	while(1) {
 		
 		if(!play){
+			clear_leds();
+			pio_clear(LED4_PIO,LED4_PIO_IDX_MASK);
 			pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);
 		}
 		if (but1_flag){
@@ -286,6 +301,9 @@ int main (void)
 		}
 		if (but2_flag){
 			play = !play;
+			if (play){ 
+				pio_set(LED4_PIO,LED4_PIO_IDX_MASK);
+			}
 			delay_s(1);
 			but2_flag = 0;
 		}
@@ -315,6 +333,7 @@ int main (void)
 				k++;
 				}else{
 				k = 0;
+				clear_leds();
 				music++;
 				delay_s(2);
 				if(music == sizeof(music_list)/sizeof(music_list[0])) music = 0;
